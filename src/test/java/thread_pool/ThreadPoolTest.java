@@ -51,4 +51,52 @@ public class ThreadPoolTest {
     void print(String message) {
         System.out.printf("[%s] %s%n", Thread.currentThread().getName(), message);
     }
+
+    @Test
+    void newWorkStealingPool() {
+        try (ExecutorService executorService = Executors.newWorkStealingPool(100)) {
+            for (int i = 0; i < 100; i++) {
+                executorService.submit(() -> {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    System.out.println("[" + Thread.currentThread().getName() + "] Hello, world!");
+                });
+            }
+        }
+    }
+
+    @Test
+    void newDefaultWorkStealingPool() {
+        try (ExecutorService executorService = Executors.newWorkStealingPool()) {
+            for (int i = 0; i < 100; i++) {
+                executorService.submit(() -> {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    System.out.println("[" + Thread.currentThread().getName() + "] Hello, world!");
+                });
+            }
+        }
+    }
+
+    @Test
+    void newVirtualThreadPerExecutor() {
+        try (ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (int i = 0; i < 100; i++) {
+                executorService.submit(() -> {
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    System.out.println("[" + Thread.currentThread().threadId() + "] Hello, world!");
+                });
+            }
+        }
+    }
 }

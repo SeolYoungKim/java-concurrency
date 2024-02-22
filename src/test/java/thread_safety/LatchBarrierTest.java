@@ -1,11 +1,12 @@
 package thread_safety;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 
-class CounterTest {
+class LatchBarrierTest {
     static class Counter {
         public int count;
 
@@ -44,5 +45,41 @@ class CounterTest {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    void barrier() {
+        CyclicBarrier cyclicBarrier = new CyclicBarrier(10);
+        try (ExecutorService threadPool = Executors.newFixedThreadPool(20)) {
+            for (int i = 0; i < 8; i++) {
+                threadPool.submit(() -> {
+                    try {
+                        System.out.printf("[%s] before await\n", Thread.currentThread().getName());
+                        cyclicBarrier.await();
+                        System.out.printf("[%s] after await\n", Thread.currentThread().getName());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            System.out.println("Thread.sleep(1000)");
+            Thread.sleep(1000);
+
+            for (int i = 0; i < 12; i++) {
+                threadPool.submit(() -> {
+                    try {
+                        System.out.printf("[%s] before await\n", Thread.currentThread().getName());
+                        cyclicBarrier.await();
+                        System.out.printf("[%s] after await\n", Thread.currentThread().getName());
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 }
