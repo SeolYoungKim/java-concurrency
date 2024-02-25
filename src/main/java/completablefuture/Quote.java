@@ -15,12 +15,17 @@ public class Quote {
     }
 
     public static Quote parse(String s) {
-        String[] split = s.split(":");
+        try {
+            Thread.sleep(1000L);
+            String[] split = s.split(":");
 
-        String shopName = split[0];
-        double price = Double.parseDouble(split[1]);
-        Discount.Code discountCode = Discount.Code.valueOf(split[2]);
+            String shopName = split[0];
+            double price = Double.parseDouble(split[1]);
+            Discount.Code discountCode = Discount.Code.valueOf(split[2]);
 
-        return new Quote(shopName, price, discountCode);
+            return new Quote(shopName, price, discountCode);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

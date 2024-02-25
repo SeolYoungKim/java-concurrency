@@ -1,6 +1,9 @@
 package completablefuture;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
 public class DiscountService {
@@ -8,6 +11,11 @@ public class DiscountService {
     private static final List<Shop> SHOPS = IntStream.rangeClosed(1, SHOP_COUNT)
             .mapToObj(i -> new Shop("Shop" + i))
             .toList();
+    private static final Executor THREAD_POOL = Executors.newFixedThreadPool(Math.min(SHOP_COUNT, 100), r -> {
+        Thread thread = new Thread(r);
+        thread.setDaemon(true);
+        return thread;
+    });
 
     public static void main(String[] args) {
         long start = System.nanoTime();
@@ -17,11 +25,14 @@ public class DiscountService {
     }
 
     public static List<String> findPrices(String product) {
-        // element1: 할인 전 가격 얻기 -> 파싱 -> 할인 적용 가격 얻기 -> element2: 할인 전 가격 얻기 -> 파싱 -> 할인 적용 가격 얻기 -> ...
-        return SHOPS.stream()
-                .map(shop -> shop.getPrice(product))
-                .map(Quote::parse)
-                .map(Discount::applyDiscount)
+        List<CompletableFuture<String>> futurePrices = SHOPS.stream()
+                .map(shop -> CompletableFuture.supplyAsync(() -> shop.getPrice(product), THREAD_POOL))
+                .map(futurePrice -> futurePrice.thenApply(Quote::parse))
+                .map(futureQuote -> futureQuote.thenCompose(quote -> CompletableFuture.supplyAsync(() -> Discount.applyDiscount(quote), THREAD_POOL)))
+                .toList();
+
+        return futurePrices.stream()
+                .map(CompletableFuture::join)
                 .toList();
     }
 }
