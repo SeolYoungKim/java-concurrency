@@ -16,8 +16,27 @@ public class CompletableFutureTest {
 
         CompletableFuture<Integer> completableFuture = new CompletableFuture<>();
         threadPool.submit(() -> completableFuture.complete(f(x)));
+        System.out.println("작업이 제출됨");
 
         int b = g(x);
+        System.out.println("g() 호출");
+        System.out.println(completableFuture.get() + b);
+
+        threadPool.shutdown();
+    }
+
+    @DisplayName("스레드 풀에 제출하지 않고 직접 실행하면 동기식으로 수행된다. (CompletableFuture를 사용하는 이점이 없을듯)")
+    @Test
+    void completableFutureGet2() throws ExecutionException, InterruptedException {
+        ExecutorService threadPool = Executors.newFixedThreadPool(10);
+        int x = 1337;
+
+        CompletableFuture<Integer> completableFuture = new CompletableFuture<>();
+        completableFuture.complete(f(x));  // 여기서 호출하면 끝날 때 까지 기다리는구나
+        System.out.println("작업이 제출됨");
+
+        int b = g(x);
+        System.out.println("g() 호출");
         System.out.println(completableFuture.get() + b);
 
         threadPool.shutdown();
@@ -41,6 +60,13 @@ public class CompletableFutureTest {
     }
 
     private Integer f(int x) {
+        System.out.println("[" + Thread.currentThread().getName() + "]" + "f() 호출됨");
+        try {
+            Thread.sleep(1000L);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        System.out.println("[" + Thread.currentThread().getName() + "]" + "f() 처리됨");
         return x + 10;
     }
 
