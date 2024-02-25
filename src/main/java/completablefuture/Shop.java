@@ -2,10 +2,19 @@ package completablefuture;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
+import lombok.Getter;
 
+@Getter
 public class Shop {
+    private final String name;
+
+    public Shop(String name) {
+        this.name = name;
+    }
+
     public static void main(String[] args) {
-        Shop shop = new Shop();
+        Shop shop = new Shop("my shop");
 
         long start = System.nanoTime();
         Future<Double> futurePrice = shop.getPriceAsync("my favorite product");
@@ -38,22 +47,11 @@ public class Shop {
     }
 
     public Future<Double> getPriceAsync(String product) {
-        CompletableFuture<Double> futurePrice = new CompletableFuture<>();
-        new Thread(() -> {
-            try {
-                double price = calculatePrice(product);  // 다른 스레드에서 비동기로 작업
-                futurePrice.complete(price);  // 결과를 futurePrice에 설정
-            } catch (Exception ex) {
-                futurePrice.completeExceptionally(ex);  // 도중에 예외 발생시 예외를 발생시킴
-            }
-        }).start();
-
-        return futurePrice;  // 해당 메서드를 호출한 스레드는 계산 결과를 기다리지 않고 값을 반환 받음
+        return CompletableFuture.supplyAsync(() -> calculatePrice(product));
     }
 
     private double calculatePrice(String product) {
         delay();
-        throw new RuntimeException("product not available");
-//        return ThreadLocalRandom.current().nextDouble() * product.charAt(0) + product.charAt(1);
+        return ThreadLocalRandom.current().nextDouble() * product.charAt(0) + product.charAt(1);
     }
 }
