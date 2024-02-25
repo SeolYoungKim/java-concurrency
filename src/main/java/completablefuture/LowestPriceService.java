@@ -11,8 +11,13 @@ public class LowestPriceService {
     );
 
     public static List<String> findPrices(String product) {
-        return SHOPS.stream()
-                .map(shop -> String.format("%s price is %.2f", shop.getName(), shop.getPrice(product)))
+        // 병렬 스트림은 내부적으로 ForkJoinPool을 사용한다. (ForkJoinPool.commonPool 사용)
+        // main 스레드도 해당 작업에 참여한다.
+        return SHOPS.parallelStream()
+                .map(shop -> {
+                    System.out.println("[" + Thread.currentThread().getName() + "] search price of '" + shop.getName() + "'");
+                    return String.format("%s price is %.2f", shop.getName(), shop.getPrice(product));
+                })
                 .toList();
     }
 
