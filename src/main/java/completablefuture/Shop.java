@@ -42,8 +42,11 @@ public class Shop {
         }
     }
 
-    public double getPrice(String product) {
-        return calculatePrice(product);
+    public String getPrice(String product) {
+        double price = calculatePrice(product);
+        Discount.Code code = Discount.Code.values()[ThreadLocalRandom.current().nextInt(Discount.Code.values().length)];
+        return "%s:%.2f:%s"
+                .formatted(name, price, code);
     }
 
     public Future<Double> getPriceAsync(String product) {

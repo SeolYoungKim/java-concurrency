@@ -2,14 +2,20 @@ package completablefuture;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 
 public class LowestPriceService {
-    private static final List<Shop> SHOPS = List.of(
-            new Shop("BestPrice"),
-            new Shop("LetsSaveBig"),
-            new Shop("MyFavoriteShop"),
-            new Shop("BuyItAll")
-    );
+    private static final int SHOP_COUNT = 10;
+    private static final List<Shop> SHOPS = IntStream.rangeClosed(1, SHOP_COUNT)
+            .mapToObj(i -> new Shop("Shop" + i))
+            .toList();
+    private static final Executor THREAD_POOL = Executors.newFixedThreadPool(Math.min(SHOP_COUNT, 100), r -> {
+        Thread thread = new Thread(r);
+        thread.setDaemon(true);
+        return thread;
+    });
 
     public static void main(String[] args) {
         long start = System.nanoTime();
@@ -19,41 +25,17 @@ public class LowestPriceService {
     }
 
     private static List<String> findPrices(String product) {
-//        return SHOPS.stream()
-//                .map(shop ->
-//                        CompletableFuture.supplyAsync(
-//                                () -> {
-//                                    System.out.println("[" + Thread.currentThread().getName() + "] search price of '" + shop.getName() + "'");
-//                                    return String.format("%s price is %.2f", shop.getName(), shop.getPrice(product));
-//                                }
-//                        )
-//                )
-//                .map(cp -> {
-//                    System.out.println("[" + Thread.currentThread().getName() + "] join");
-//                    String result = cp.join();
-//                    System.out.println("[" + Thread.currentThread().getName() + "] joined. result = " + result);
-//                    return result;
-//                })
-//                .toList();
-
         List<CompletableFuture<String>> findPrices = SHOPS.stream()
                 .map(shop ->
-                        CompletableFuture.supplyAsync(  // 여기서는 main 스레드는 참여하지 않음
-                                () -> {
-                                    System.out.println("[" + Thread.currentThread().getName() + "] search price of '" + shop.getName() + "'");
-                                    return String.format("%s price is %.2f", shop.getName(), shop.getPrice(product));
-                                }
+                        CompletableFuture.supplyAsync(
+                                () -> shop.getPrice(product),
+                                THREAD_POOL
                         )
                 )
                 .toList();
 
         return findPrices.stream()
-                .map(cp -> {
-                    System.out.println("[" + Thread.currentThread().getName() + "] join");
-                    String result = cp.join();
-                    System.out.println("[" + Thread.currentThread().getName() + "] joined. result = " + result);
-                    return result;
-                })
+                .map(CompletableFuture::join)
                 .toList();
     }
 }
